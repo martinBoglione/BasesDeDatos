@@ -1,0 +1,127 @@
+CREATE TABLE proveedores
+	(id_prov varchar(2) PRIMARY KEY,
+	 prov_nombre varchar(20),
+	 categoria int,
+	 ciudad varchar(20))
+
+CREATE TABLE componenetes
+	(id_comp varchar(2) PRIMARY KEY,
+	 comp_nombre varchar(3),
+	 color varchar(10),
+	 peso int,
+	 ciudad varchar(20))
+
+CREATE TABLE articulos
+	(id_art varchar(2) PRIMARY KEY,
+	 art_nombre varchar(20),
+	 ciudad varchar(20))
+					
+CREATE TABLE envios
+	(id_prov varchar(2),
+	 id_comp varchar(2),
+	 id_art  varchar(2),
+	 cantidad int,
+	 CONSTRAINT enviosPk PRIMARY KEY(id_prov,id_comp,id_art),
+	 CONSTRAINT articulos_fk FOREIGN KEY (id_art) REFERENCES articulos(id_art),
+	 CONSTRAINT componentes_fk FOREIGN KEY (id_comp) REFERENCES componenetes(id_comp),
+	 CONSTRAINT proveedores_fk FOREIGN KEY (id_prov) REFERENCES proveedores(id_prov))
+
+																			
+INSERT INTO proveedores
+	(id_prov, prov_nombre, categoria, ciudad)
+VALUES
+	('P1', 'Carlos', 20, 'La Plata'),
+	('P2', 'Juan', 10, 'Cap. Fed.'),
+	('P3', 'Jose', 30, 'La Plata'),
+	('P4', 'Dora', 20, 'La Plata'),
+	('P5', 'Eva', 30, 'Bernal');
+					
+					
+INSERT INTO componenetes
+	(id_comp, comp_nombre, color, peso, ciudad)
+VALUES
+	('C1', 'X3A', 'Rojo', 12, 'La Plata'),
+	('C2', 'B85', 'Verde', 17, 'Cap. Fed.'),
+	('C3', 'C4B', 'Azul', 17, 'Quilmes'),
+	('C4', 'C4B', 'Rojo', 14, 'La Plata'),
+	('C5', 'VT8', 'Azul', 12, 'Cap. Fed.'),
+	('C6', 'C30', 'Rojo', 19, 'La Plata')
+;
+
+INSERT INTO articulos
+	(id_art, art_nombre, ciudad)
+VALUES
+	('T1', 'Clasificadora', 'Cap. Fed.'),
+	('T2', 'Perforadora', 'Quilmes'),
+	('T3', 'Lectora', 'Bernal'),
+	('T4', 'Consola', 'Bernal'),
+	('T5', 'Mezcladora', 'La Plata'),
+	('T6', 'Terminal', 'Berazategui'),
+	('T7', 'Cinta', 'La Plata')
+;
+
+INSERT INTO envios
+	(id_prov, id_comp, id_art, cantidad)
+VALUES
+	('P1', 'C1', 'T1', 200),
+	('P1', 'C1', 'T4', 700),
+	('P2', 'C3', 'T1', 400),
+	('P2', 'C3', 'T2', 200),
+	('P2', 'C3', 'T3', 200),
+	('P2', 'C3', 'T4', 500),
+	('P2', 'C3', 'T5', 600),
+	('P2', 'C3', 'T6', 400),
+	('P2', 'C3', 'T7', 800),
+	('P2', 'C5', 'T2', 100),
+	('P3', 'C3', 'T1', 200),
+	('P3', 'C4', 'T2', 100),
+	('P4', 'C6', 'T3', 300),
+	('P4', 'C6', 'T7', 300),
+	('P5', 'C2', 'T2', 200),
+	('P5', 'C2', 'T4', 100),
+	('P5', 'C5', 'T4', 500),
+	('P5', 'C5', 'T7', 100),
+	('P5', 'C6', 'T2', 200),
+	('P5', 'C1', 'T4', 100),
+	('P5', 'C3', 'T4', 200),
+	('P5', 'C4', 'T4', 800),
+	('P5', 'C5', 'T5', 400),
+	('P5', 'C6', 'T4', 500)
+;
+--1c
+ALTER TABLE articulos																			
+ADD NroSerire int
+
+ALTER TABLE articulos
+ALTER COLUMN NroSerire TYPE varchar(2)
+					
+--1d					
+UPDATE componenetes					
+SET color = 'Violeta'					
+WHERE color = 'Rojo'			
+																			
+UPDATE componenetes
+SET color = 'Marron'																			
+WHERE color = 'Azul'																			
+
+--1e FUNCIONA														
+ALTER TABLE componenetes
+ADD CONSTRAINT colorValue CHECK (color IN('Rojo','Verde','Azul','Violeta','Marron'));																		
+
+INSERT INTO componenetes (id_comp,color)
+VALUES ('P1','Amarrilo')
+--f 
+UPDATE proveedores									  
+SET ciudad = 'BahiaBlanca'
+WHERE prov_nombre = 'Carlos' or prov_nombre = 'Eva'																			
+																			
+--g																			
+DELETE FROM envios																			
+WHERE cantidad > 200 and cantidad < 300	
+
+										  
+--h									  
+DELETE FROM articulos									  
+WHERE ciudad = 'LaPlata'									  
+						  
+								
