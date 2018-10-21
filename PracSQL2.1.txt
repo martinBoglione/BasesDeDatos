@@ -4,17 +4,17 @@ SELECT *
 FROM articulos
 WHERE ciudad = 'Bernal'
 
---b
+--b ??????
 SELECT id_prov
 FROM envios
 WHERE id_art = 'T1'
 
---c ?????
+--c 
 SELECT id_art,ciudad
 FROM articulos
-WHERE ciudad LIKE '%e%'or ciudad LIKE '%d'
+WHERE  ciudad LIKE '%e%' or ciudad LIKE '%d'
 
---d
+--d ????????
 SELECT id_prov
 FROM envios
 WHERE id_art = 'T1' and id_comp = 'C1'
@@ -25,7 +25,7 @@ FROM articulos,envios
 WHERE id_prov = 'P1'
 ORDER BY art_nombre ASC 
 
---f
+--f ???????
 SELECT id_comp
 FROM componenetes,articulos
 WHERE articulos.ciudad = 'Cap.Fed.'
@@ -33,12 +33,16 @@ WHERE articulos.ciudad = 'Cap.Fed.'
 --g ??????
 SELECT id_comp
 FROM componenetes
-WHERE peso (SELECT MIN(peso)
-	    FROM componenetes)
+WHERE peso in (select min(peso) 
+			  from componenetes)
 
 
 --h
 SELECT id_prov
 FROM componenetes,articulos,proveedores
 WHERE (articulos.ciudad = 'La Plata' and componenetes.color = 'Rojo') or 
-      (articulos.ciudad = 'Cap.Fed.' and componenetes.color = 'Rojo)
+	  (articulos.ciudad = 'Cap.Fed.' and componenetes.color = 'Rojo') 
+
+
+--i
+asdf
