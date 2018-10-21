@@ -1,0 +1,44 @@
+--Parte 2
+--a
+SELECT *
+FROM articulos
+WHERE ciudad = 'Bernal'
+
+--b
+SELECT id_prov
+FROM envios
+WHERE id_art = 'T1'
+
+--c ?????
+SELECT id_art,ciudad
+FROM articulos
+WHERE ciudad LIKE '%e%'or ciudad LIKE '%d'
+
+--d
+SELECT id_prov
+FROM envios
+WHERE id_art = 'T1' and id_comp = 'C1'
+
+--e ?????
+SELECT art_nombre
+FROM articulos,envios
+WHERE id_prov = 'P1'
+ORDER BY art_nombre ASC 
+
+--f
+SELECT id_comp
+FROM componenetes,articulos
+WHERE articulos.ciudad = 'Cap.Fed.'
+
+--g ??????
+SELECT id_comp
+FROM componenetes
+WHERE peso (SELECT MIN(peso)
+	    FROM componenetes)
+
+
+--h
+SELECT id_prov
+FROM componenetes,articulos,proveedores
+WHERE (articulos.ciudad = 'La Plata' and componenetes.color = 'Rojo') or 
+      (articulos.ciudad = 'Cap.Fed.' and componenetes.color = 'Rojo)
