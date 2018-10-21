@@ -1,0 +1,30 @@
+SELECT fecha_devolucion - fecha_prestamo
+FROM prestamo
+
+SELECT cod_socio, monto_cuota * 12 + matricula AS total
+FROM socio
+
+SELECT isbn_libro
+FROM ejemplar
+WHERE edicion = 2 or edicion = 3
+
+SELECT titulo
+FROM libro JOIN ejemplar ON libro.isbn = ejemplar.isbn_libro
+WHERE edicion = 2 or edicion = 3
+
+SELECT COUNT(fecha_prestamo),cod_socio
+FROM prestamo
+WHERE fecha_prestamo BETWEEN '20130101' AND '20130301'
+GROUP BY cod_socio
+
+--producto cartesiano
+SELECT *
+FROM prestamo , socio	
+
+--join condicional
+SELECT *
+FROM prestamo JOIN socio ON fecha_ingreso < fecha_prestamo
+
+SELECT *
+FROM ejemplar JOIN socio ON fecha_ingreso < '20080201'
+
