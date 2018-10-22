@@ -4,17 +4,17 @@ SELECT *
 FROM articulos
 WHERE ciudad = 'Bernal'
 
---b ??????
+--b
 SELECT id_prov
 FROM envios
 WHERE id_art = 'T1'
 
---c 
+--c ?????
 SELECT id_art,ciudad
 FROM articulos
-WHERE  ciudad LIKE '%e%' or ciudad LIKE '%d'
+WHERE ciudad LIKE '%e%'or ciudad LIKE '%d'
 
---d ????????
+--d
 SELECT id_prov
 FROM envios
 WHERE id_art = 'T1' and id_comp = 'C1'
@@ -25,7 +25,7 @@ FROM articulos,envios
 WHERE id_prov = 'P1'
 ORDER BY art_nombre ASC 
 
---f ???????
+--f
 SELECT id_comp
 FROM componenetes,articulos
 WHERE articulos.ciudad = 'Cap.Fed.'
@@ -33,16 +33,48 @@ WHERE articulos.ciudad = 'Cap.Fed.'
 --g ??????
 SELECT id_comp
 FROM componenetes
-WHERE peso in (select min(peso) 
-			  from componenetes)
+WHERE peso (SELECT MIN(peso)
+	    FROM componenetes)
 
 
 --h
 SELECT id_prov
 FROM componenetes,articulos,proveedores
 WHERE (articulos.ciudad = 'La Plata' and componenetes.color = 'Rojo') or 
-	  (articulos.ciudad = 'Cap.Fed.' and componenetes.color = 'Rojo') 
+      (articulos.ciudad = 'Cap.Fed.' and componenetes.color = 'Rojo)
 
 
---i
-asdf
+
+--j
+SELECT count(id_prov),distinct(count(id_art)),sum(cantidad)
+FROM envios
+WHERE id_prov = 'P2'
+
+--k
+SELECT id_prov,max(cantidad)
+FROM envios
+COUNT BY id_prov
+
+--l
+SELECT id_comp,id_art,sum(cantidad)
+FROM envios
+GROUP BY id_comp,id_art
+
+--m
+SELECT id_comp,sum(cantidad)
+FROM envios
+GROUP BY id_comp
+HAVING sum(cantidad) > 500
+
+--n
+SELECT id_art,avg(cantidad)
+FROM envios
+GROUP BY id_art
+HAVING avg(cantidad) > 420
+
+--ñ
+
+
+
+
+
