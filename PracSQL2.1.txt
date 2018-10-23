@@ -9,7 +9,7 @@ SELECT id_prov
 FROM envios
 WHERE id_art = 'T1'
 
---c ?????
+--c
 SELECT id_art,ciudad
 FROM articulos
 WHERE ciudad LIKE '%e%'or ciudad LIKE '%d'
@@ -19,9 +19,9 @@ SELECT id_prov
 FROM envios
 WHERE id_art = 'T1' and id_comp = 'C1'
 
---e ?????
+--e
 SELECT art_nombre
-FROM articulos,envios
+FROM articulos NATURAL JOIN envios
 WHERE id_prov = 'P1'
 ORDER BY art_nombre ASC 
 
@@ -30,20 +30,35 @@ SELECT id_comp
 FROM componenetes,articulos
 WHERE articulos.ciudad = 'Cap.Fed.'
 
---g ??????
+--g 
 SELECT id_comp
 FROM componenetes
 WHERE peso (SELECT MIN(peso)
-	    FROM componenetes)
-
+	 	    FROM componenetes)
 
 --h
 SELECT id_prov
-FROM componenetes,articulos,proveedores
-WHERE (articulos.ciudad = 'La Plata' and componenetes.color = 'Rojo') or 
-      (articulos.ciudad = 'Cap.Fed.' and componenetes.color = 'Rojo)
+FROM componenetes NATURAL JOIN articulos NATURAL JOIN proveedores
+WHERE (articulos.ciudad = 'La Plata' or articulos.ciudad = 'Cap.Fed.') and componenetes.color = 'Rojo' 
+      
+--i 
+SELECT id_prov
+FROM envios NATURAL JOIN componenetes
+WHERE componenetes.color <> 'Verde'
 
+EXCEPT
 
+SELECT id_prov
+FROM envios NATURAL JOIN componenetes
+WHERE componenetes.color = 'Verde'
+
+--i de otra forma
+SELECT id_prov
+FROM proveedores
+WHERE id_prov NOT IN 
+	(SELECT id_prov
+	 FROM envios NATURAL JOIN componenetes
+	 WHERE componenetes.color = 'Verde')
 
 --j
 SELECT count(id_prov),distinct(count(id_art)),sum(cantidad)
@@ -61,9 +76,9 @@ FROM envios
 GROUP BY id_comp,id_art
 
 --m
-SELECT id_comp,sum(cantidad)
-FROM envios
-GROUP BY id_comp
+SELECT comp_nombre,sum(cantidad)
+FROM componenetes NATURAL JOIN envios
+GROUP BY comp_nombre
 HAVING sum(cantidad) > 500
 
 --n
@@ -73,8 +88,26 @@ GROUP BY id_art
 HAVING avg(cantidad) > 420
 
 --ñ
+SELECT id_prov
+FROM envios NATURAL JOIN (SELECT id_comp,AVG(cantidad) AS media
+						  FROM envios
+						  GROUP BY id_comp) AS compmedios 
 
-
-
-
-
+WHERE cantidad > media
+							
+--o
+SELECT articulos.id_art
+FROM articulos
+JOIN envios ON articulos.id_art = envios.id_art
+JOIN componenetes ON componenetes.id_comp = envios.id_comp
+WHERE articulos.ciudad = componenetes.ciudad
+									 
+EXCEPT 
+									 
+SELECT articulos.id_art
+FROM articulos
+JOIN envios ON articulos.id_art = envios.id_art
+JOIN componenetes ON componenetes.id_comp = envios.id_comp
+WHERE articulos.ciudad <> componenetes.ciudad
+									 
+--p
