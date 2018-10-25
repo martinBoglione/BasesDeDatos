@@ -130,10 +130,11 @@ SELECT oficio
 FROM trabajador NATURAL JOIN asignacion
 WHERE id_e = 435
 
---c ??????
-SELECT nombre
-FROM trabajador
-UNION
+--c 
+SELECT empleado.nombre , supervisor.nombre
+FROM trabajador AS empleado JOIN trabajador AS supervisor ON empleado.legajo_supv = supervisor.legajo
+
+
 --d
 SELECT DISTINCT nombre
 FROM trabajador NATURAL JOIN asignacion
