@@ -1,12 +1,10 @@
---Martin Boglione
---Tp Sql
-
---3.2
---1
+--3.2 Preguntas
+--1									  
 CREATE TABLE carrera
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(200));
 										
+
 CREATE TABLE usuario 
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(100),
@@ -56,8 +54,7 @@ CREATE TABLE like_publicacion
 			 fecha TIMESTAMP,
 			 CONSTRAINT like_publicacion_pk PRIMARY KEY(id_public,id_user),
 			 CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
-			 CONSTRAINT publicacion_fk FOREIGN KEY (id_public) REFERENCES publicacion(id)
-																			
+																		   
 CREATE TABLE like_comentario
 			  (id_coment INT,
 			   id_user INT,
@@ -65,7 +62,7 @@ CREATE TABLE like_comentario
 			   fecha TIMESTAMP,
 			   CONSTRAINT like_comentario_pk PRIMARY KEY(id_coment,id_user),
 			   CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
-			   CONSTRAINT comentario_fk FOREIGN KEY (id_coment) REFERENCES comentario(id)														 
+																		 
 											
 --2
 ALTER TABLE usuario
@@ -95,13 +92,14 @@ INSERT INTO carrera_usuario
 								
 																				
 --4
---Inserté el set de datos provisto en el archivo datos_unqfaces.sql en otro query(Boglione_Martin_datos.sql)
+--Inserté el set de datos provisto en el archivo datos_unqfaces.sql en otro query para que sea más ordenado este query.
 																				
 --5																				 																			 																				  
 SELECT nombre, COUNT(id_user) AS cant_alu
-FROM carrera_usuario JOIN carrera ON carrera_usuario.id_carrera = carrera.id
+FROM carrera_usuario 
+JOIN carrera ON carrera_usuario.id_carrera = carrera.id
 GROUP BY nombre 																				  
-ORDER BY length(nombre) DESC	
+ORDER BY length(nombre) DESC;	
 																				
 --6 prueba
 SELECT username,nombre,apellido
@@ -123,51 +121,79 @@ GROUP BY id_coment
 --7
 																				
 																				
---8			
---si la fecha_nacimiento es menor a 01/01/2002 significa que los usuarios del grupo tienen mas de 16 anios(teniendo en cuenta que la fecha actual es 2018)	
-																				
-SELECT nombre_grupo,COUNT(positivo) as cantLikes																	
-FROM (grupo JOIN grupo_usuario ON grupo.id = grupo_usuario.id_grupo) 
-	 						 JOIN 
-	 (publicacion JOIN like_publicacion ON publicacion.id = like_publicacion.id_public) ON grupo.id = publicacion.id_grupo																		
+--8																	
+SELECT nombre_grupo,COUNT(positivo) as cant_Likes																	
+FROM (grupo 
+JOIN grupo_usuario ON grupo.id = grupo_usuario.id_grupo) 
+JOIN (publicacion JOIN like_publicacion ON publicacion.id = like_publicacion.id_public) ON grupo.id = publicacion.id_grupo																		
 WHERE grupo_usuario.id_user IN (SELECT id
 				  				FROM usuario
-				 				WHERE fecha_nacimiento < '01/01/2002')
-																																																											
-GROUP BY nombre_grupo
-ORDER BY cantLikes	DESC				  
-FETCH FIRST 6 ROWS ONLY	
-				  
+				 				WHERE (current_date - fecha_nacimiento) > 16)																																																							
+GROUP BY nombre_grupo,like_publicacion.positivo
+HAVING positivo = true
+ORDER BY cant_Likes	DESC				  
+FETCH FIRST 6 ROWS ONLY;
+												
 --9			  
 SELECT username, COUNT(id_grupo) AS cantGrupos			  
-FROM grupo_usuario JOIN usuario ON grupo_usuario.id_user = usuario.id
+FROM grupo_usuario 
+JOIN usuario ON grupo_usuario.id_user = usuario.id
 GROUP BY username
-ORDER BY cantGrupos DESC , username ASC
+ORDER BY cantGrupos DESC , username ASC;
 				  
---10 FALTA AGREGAR EN EL SELECT LA CANTIDAD DE LIKES DEL COMENTARIO
-SELECT comentario.contenido,publicacion.contenido,COUNT(positivo) as cantDislikes
-FROM (like_comentario JOIN comentario ON like_comentario.id_coment = comentario.id) JOIN publicacion ON comentario.id_public = publicacion.id
-WHERE positivo = false
+--10 
+SELECT comentario.contenido,publicacion.contenido,COUNT(positivo=false) as cant_Dislikes,COUNT(positivo=true) as cant_Likes
+FROM (like_comentario 
+JOIN comentario ON like_comentario.id_coment = comentario.id) 
+JOIN publicacion ON comentario.id_public = publicacion.id
 GROUP BY id_coment,comentario.contenido,publicacion.contenido,fecha_comentario
-HAVING COUNT(positivo) > 3
-ORDER BY cantDislikes DESC, fecha_comentario DESC																			
+HAVING COUNT(positivo = false) > 3
+ORDER BY cant_Dislikes DESC, fecha_comentario DESC;																		
 
 --11
 SELECT nombre,apellido,titulo,fecha_publicacion
-FROM (like_publicacion JOIN publicacion ON like_publicacion.id_public = publicacion.id) JOIN usuario ON publicacion.id_user = usuario.id
-WHERE positivo = false
+FROM (like_publicacion 
+JOIN publicacion ON like_publicacion.id_public = publicacion.id) 
+JOIN usuario ON publicacion.id_user = usuario.id
+GROUP BY nombre,apellido,titulo,fecha_publicacion
+HAVING COUNT(positivo = false) > 0;
 																				
 --12
-SELECT id_grupo,max(fecha_nacimiento) AS menor,min(fecha_nacimiento) AS major,avg(age(fecha_nacimiento)) AS promedio
-FROM grupo_usuario JOIN usuario ON grupo_usuario.id_user = usuario.id
-GROUP BY id_grupo																				
-																				
---13																			
+SELECT id_grupo,
+max(age(fecha_nacimiento)) AS mayor,
+min(age(fecha_nacimiento)) AS menor,
+avg(age(fecha_nacimiento)) AS promedio
+FROM grupo_usuario 
+JOIN usuario ON grupo_usuario.id_user = usuario.id
+GROUP BY id_grupo;
+		
+--13
+SELECT DISTINCT(id)
+FROM usuario 
+JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user 
+JOIN like_publicacion ON usuario.id = like_publicacion.id_user
+WHERE usuario.id IN (SELECT id_user
+					 FROM like_publicacion
+					 WHERE positivo = true)
+ 
+INTERSECT -- UNION???					 
 
-																					  
-																					  
-																					  
-																					  
-																					  
-																					  
-																					  
+SELECT DISTINCT(id)
+FROM usuario 
+JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user 
+JOIN like_comentario ON usuario.id = like_comentario.id_user
+WHERE usuario.id IN (SELECT id_user
+					 FROM like_comentario
+					 WHERE positivo = true)						
+					  
+--14
+SELECT usuario.id AS id_usuario,max(fecha_comentario) AS ultimo_comentario
+FROM usuario
+JOIN grupo_usuario ON usuario.id = grupo_usuario.id_user
+JOIN publicacion ON usuario.id = publicacion.id_user
+JOIN comentario ON publicacion.id = comentario.id_public
+GROUP BY usuario.id
+ORDER BY usuario.id	
+		
+		
+																				 
