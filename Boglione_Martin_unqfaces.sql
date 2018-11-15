@@ -1,10 +1,12 @@
---3.2 Preguntas
---1									  
+--Martin Boglione
+--Tp Sql
+
+--3.2
+--1
 CREATE TABLE carrera
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(200));
 										
-
 CREATE TABLE usuario 
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(100),
@@ -54,7 +56,8 @@ CREATE TABLE like_publicacion
 			 fecha TIMESTAMP,
 			 CONSTRAINT like_publicacion_pk PRIMARY KEY(id_public,id_user),
 			 CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
-																		   
+			 CONSTRAINT publicacion_fk FOREIGN KEY (id_public) REFERENCES publicacion(id)
+																			
 CREATE TABLE like_comentario
 			  (id_coment INT,
 			   id_user INT,
@@ -62,7 +65,7 @@ CREATE TABLE like_comentario
 			   fecha TIMESTAMP,
 			   CONSTRAINT like_comentario_pk PRIMARY KEY(id_coment,id_user),
 			   CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
-																		 
+			   CONSTRAINT comentario_fk FOREIGN KEY (id_coment) REFERENCES comentario(id)														 
 											
 --2
 ALTER TABLE usuario
@@ -92,7 +95,7 @@ INSERT INTO carrera_usuario
 								
 																				
 --4
---Inserté el set de datos provisto en el archivo datos_unqfaces.sql en otro query para que sea más ordenado este query.
+--Inserté el set de datos provisto en el archivo datos_unqfaces.sql en otro query(Boglione_Martin_datos.sql)
 																				
 --5																				 																			 																				  
 SELECT nombre, COUNT(id_user) AS cant_alu
@@ -119,7 +122,6 @@ WHERE positivo = TRUE
 GROUP BY id_coment
 
 --7
-																				
 																				
 --8																	
 SELECT nombre_grupo,COUNT(positivo) as cant_Likes																	
@@ -165,9 +167,10 @@ min(age(fecha_nacimiento)) AS menor,
 avg(age(fecha_nacimiento)) AS promedio
 FROM grupo_usuario 
 JOIN usuario ON grupo_usuario.id_user = usuario.id
-GROUP BY id_grupo;
-		
---13
+GROUP BY id_grupo;																				
+																
+																				
+--13 no terminado
 SELECT DISTINCT(id)
 FROM usuario 
 JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user 
@@ -186,14 +189,44 @@ WHERE usuario.id IN (SELECT id_user
 					 FROM like_comentario
 					 WHERE positivo = true)						
 					  
---14
-SELECT usuario.id AS id_usuario,max(fecha_comentario) AS ultimo_comentario
+--14 corregir
+SELECT usuario.id,max(fecha_comentario) AS ultimo_comentario,comentario.contenido
 FROM usuario
 JOIN grupo_usuario ON usuario.id = grupo_usuario.id_user
 JOIN publicacion ON usuario.id = publicacion.id_user
 JOIN comentario ON publicacion.id = comentario.id_public
-GROUP BY usuario.id
-ORDER BY usuario.id	
+GROUP BY usuario.id,comentario.contenido
+ORDER BY usuario.id;
+
+--15 no terminado																			  
+SELECT usuario.nombre,apellido,username,email,carrera.nombre AS nombre_carreras
+FROM usuario
+JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user
+JOIN carrera ON carrera_usuario.id_carrera = carrera.id
+WHERE usuario.id NOT IN (SELECT id_user
+						 FROM like_comentario)	
+
+ORDER BY usuario.nombre asc
+				
+		
+--16 las comillas son para agregar un espacio entre apellido y age(fecha_nacimiento)
+SELECT nombre, apellido || ' ' || AGE(fecha_nacimiento) AS apellido_y_edad
+FROM usuario;																				  
+																					  																				  
+--17
+CREATE VIEW ultima_publicacion
+SELECT username,contenido,last(fecha_publicacion)		
+FROM usuario 
+JOIN publicacion ON usuario.id = publicacion.id_user
+GROUP BY username,contenido	
+ORDER BY username asc		
 		
 		
-																				 
+		
+		
+		
+		
+		
+		
+		
+																					  
