@@ -1,12 +1,10 @@
---Martin Boglione
---Tp Sql
-
---3.2
---1
+--3.2 Preguntas
+--1									  
 CREATE TABLE carrera
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(200));
 										
+
 CREATE TABLE usuario 
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(100),
@@ -55,21 +53,21 @@ CREATE TABLE like_publicacion
 			 positivo BOOL,
 			 fecha TIMESTAMP,
 			 CONSTRAINT like_publicacion_pk PRIMARY KEY(id_public,id_user),
-			 CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id),
-			 CONSTRAINT publicacion_fk FOREIGN KEY (id_public) REFERENCES publicacion(id));
-																			
+			 CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
+			 CONSTRAINT publicacion_fk FOREIGN KEY (id_public) REFERENCES publicacion(id)																
+ 																			
 CREATE TABLE like_comentario
 			  (id_coment INT,
 			   id_user INT,
 			   positivo BOOL,
 			   fecha TIMESTAMP,
 			   CONSTRAINT like_comentario_pk PRIMARY KEY(id_coment,id_user),
-			   CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id),
-			   CONSTRAINT comentario_fk FOREIGN KEY (id_coment) REFERENCES comentario(id));														 
+			   CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
+			   CONSTRAINT comentario_fk FOREIGN KEY (id_coment) REFERENCES comentario(id) 														 
 											
 --2
 ALTER TABLE usuario
-DROP COLUMN id_carrera;
+DROP COLUMN id_carrera
 																			  
 CREATE TABLE carrera_usuario
 		      (id_carrera INT,
@@ -106,26 +104,55 @@ ORDER BY length(nombre) DESC;
 																				
 --6 prueba
 SELECT username,nombre,apellido
+FROM usuario
+WHERE usuario.id IN (SELECT usuario.id
+					 FROM usuariosCon_publicaciones_con_mas_de_10Likes
+					 INTERSECT
+					 SELECT usuario.id
+					 FROM usarios_sin_dislikes_enComentarios);
+								
+--usuarios con publicaciones con mas de 10 likes
+CREATE VIEW usuariosCon_publicaciones_con_mas_de_10Likes AS
+SELECT usuario.id,COUNT(positivo)
 FROM usuario 
-
-
-
-													
---publicacion con mas de 10 likes
-SELECT id_public,COUNT(positivo)
-FROM like_publicacion																		
-GROUP BY id_public
+JOIN publicacion ON usuario.id = publicacion.id_user
+JOIN like_publicacion ON publicacion.id = like_publicacion.id_public  
+WHERE positivo = true
+GROUP BY usuario.id
 HAVING COUNT(positivo) >= 10;		
 																				
---id_comentarios que no tienen dislikes
-SELECT id_coment																				
-FROM like_comentario
+--usuarios sin dislikes en comentarios 
+CREATE VIEW usarios_sin_dislikes_enComentarios AS
+SELECT usuario.id																				
+FROM usuario
 EXCEPT
-SELECT id_coment
-FROM like_comentario
+SELECT usuario.id
+FROM usuario
+JOIN comentario ON usuario.id = comentario.id_user
+JOIN like_comentario ON comentario.id = like_comentario.id_coment
 WHERE positivo=false;
 																																						
 --7
+CREATE VIEW influencer AS
+SELECT username,nombre,apellido
+FROM usuario
+WHERE usuario.id IN (SELECT usuario.id
+					 FROM usuariosCon_publicaciones_con_mas_de_10Likes
+					 INTERSECT
+					 SELECT usuario.id
+					 FROM usarios_sin_dislikes_enComentarios);
+
+CREATE VIEW cant_likes_publicacion AS
+SELECT id_public, COUNT(positivo) AS cant_likes_public
+FROM like_publicacion
+WHERE positivo = true
+GROUP BY id_public;
+		
+CREATE VIEW cant_dislikes_publicacion AS
+SELECT id_public, COUNT(positivo) AS cant_dislikes_public
+FROM like_publicacion
+WHERE positivo = false
+GROUP BY id_public;					
 																				
 																				
 --8																	
@@ -148,14 +175,35 @@ GROUP BY username
 ORDER BY cant_Grupos DESC , username ASC;
 				  
 --10
-SELECT comentario.contenido,publicacion.contenido,COUNT(positivo=false) as cant_Dislikes,COUNT(positivo=true) as cant_Likes
-FROM (like_comentario 
-JOIN comentario ON like_comentario.id_coment = comentario.id) 
-JOIN publicacion ON comentario.id_public = publicacion.id
-GROUP BY id_coment,comentario.contenido,publicacion.contenido,fecha_comentario
-HAVING COUNT(positivo = false) > 3
-ORDER BY cant_Dislikes DESC, fecha_comentario ASC;																		
+SELECT comentario.contenido, publicacion.contenido,
+comentarios_con_mas_de_3dislikes.cantidadDisLikes AS cant_Dislikes,
+comentarios_con_likes.cant_likes AS cant_Likes
+FROM publicacion
+JOIN comentario ON publicacion.id = comentario.id_public
+JOIN comentarios_con_mas_de_3dislikes ON comentario.id = comentarios_con_mas_de_3dislikes.id_coment
+LEFT JOIN comentarios_con_likes ON comentario.id = comentarios_con_likes.id_coment
+ORDER BY comentarios_con_mas_de_3dislikes DESC, fecha_comentario ASC;																		
 
+
+CREATE VIEW comentarios_con_mas_de_3dislikes AS
+SELECT id_coment,COUNT(positivo) AS cantidadDisLikes
+FROM like_comentario
+WHERE positivo = false
+GROUP BY id_coment
+HAVING COUNT(positivo=false) > 3;
+																																						
+CREATE VIEW comentarios_con_likes AS
+SELECT id_coment,COUNT(positivo) AS cant_likes
+FROM like_comentario
+WHERE positivo = true
+GROUP BY id_coment;
+																																																				
+CREATE VIEW comentarios_con_dislikes AS
+SELECT id_coment,COUNT(positivo) AS cant_dislikes
+FROM like_comentario
+WHERE positivo = false
+GROUP BY id_coment;
+																				
 --11
 SELECT nombre,apellido,titulo,fecha_publicacion
 FROM (like_publicacion 
@@ -234,32 +282,49 @@ JOIN publicacion ON usuario.id = publicacion.id_user
 GROUP BY username;	
 		
 
---18 mal
-SELECT COUNT(comentario.id) AS cant_comentarios, username, max(fecha_publicacion || ' - ' || publicacion.contenido) AS ultima_publicacion,COUNT(positivo) AS like,COUNT(positivo=false) AS dislikes	
-FROM comentario 
-JOIN usuario ON comentario.id_user = usuario.id
+--18 
+SELECT username, max(fecha_publicacion || ' - ' || contenido) AS ultima_publicacion,
+cant_comentarios.cant_coment,
+cant_likes_publicacion.cant_likes_public,
+cant_dislikes_publicacion.cant_dislikes_public  
+FROM usuario
 JOIN publicacion ON usuario.id = publicacion.id_user
-JOIN like_comentario ON usuario.id = like_comentario.id_user
-GROUP BY comentario.id_user,username
+JOIN cant_comentarios ON usuario.id = cant_comentarios.id_user
+JOIN cant_likes_publicacion ON publicacion.id = cant_likes_publicacion.id_public
+JOIN cant_dislikes_publicacion ON publicacion.id = cant_dislikes_publicacion.id_public
+GROUP BY username,
+cant_comentarios.cant_coment,
+cant_likes_publicacion.cant_likes_public,
+cant_dislikes_publicacion.cant_dislikes_public; 
+		
+		
+CREATE VIEW cant_comentarios AS
+SELECT id_user, COUNT(id) AS cant_coment
+FROM comentario
+GROUP BY id_user;
 		
 --19 
 SELECT username,
-COUNT(like_publicacion.positivo = true) AS cant_likes_publicacion, 
-COUNT(like_publicacion.positivo = false) AS cant_dislikes_publicacion, 
-COUNT(like_comentario.positivo = true) AS cant_likes_comentario,	
-COUNT(like_comentario.positivo = false) AS cant_dislikes_comentario,
-		
-( (COUNT(like_publicacion.positivo = true) + COUNT(like_comentario.positivo = true)) 
-										 -
-(COUNT(like_publicacion.positivo = false) + COUNT(like_comentario.positivo = false)) ) 	AS diferencia_likes	
-		
-FROM usuario	
+cant_likes_publicacion.cant_likes_public,
+cant_dislikes_publicacion.cant_dislikes_public,
+comentarios_con_likes.cant_likes,
+comentarios_con_dislikes.cant_dislikes,
+((cant_likes_publicacion.cant_likes_public - cant_dislikes_publicacion.cant_dislikes_public)
+									+
+(comentarios_con_likes.cant_likes - comentarios_con_dislikes.cant_dislikes)) as Diferencia
+FROM usuario
 JOIN publicacion ON usuario.id = publicacion.id_user
 JOIN comentario ON publicacion.id = comentario.id_public
-JOIN like_publicacion ON publicacion.id = like_publicacion.id_public 
-JOIN like_comentario ON comentario.id = like_comentario.id_coment
-GROUP BY username
-ORDER BY diferencia_likes asc;
+JOIN cant_likes_publicacion ON publicacion.id = cant_likes_publicacion.id_public
+JOIN cant_dislikes_publicacion ON publicacion.id = cant_dislikes_publicacion.id_public
+JOIN comentarios_con_likes ON comentario.id = comentarios_con_likes.id_coment
+JOIN comentarios_con_dislikes ON comentario.id = comentarios_con_dislikes.id_coment
+GROUP BY username,
+cant_likes_publicacion.cant_likes_public,
+cant_dislikes_publicacion.cant_dislikes_public,
+comentarios_con_likes.cant_likes,
+comentarios_con_dislikes.cant_dislikes	 
+ORDER BY diferencia ASC
 		
 --20
 CREATE TABLE log_publicacion 
@@ -473,6 +538,7 @@ WHERE id = 6000;
 --delete datos en comentario
 DELETE FROM comentario
 WHERE id = 6000;
- 
- 
- 
+
+
+		
+		
