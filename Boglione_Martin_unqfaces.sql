@@ -1,10 +1,12 @@
---3.2 Preguntas
---1									  
+--Martin Boglione
+--Tp Sql
+
+--3.2
+--1
 CREATE TABLE carrera
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(200));
 										
-
 CREATE TABLE usuario 
 			  (id SERIAL PRIMARY KEY,
 			   nombre VARCHAR(100),
@@ -53,21 +55,21 @@ CREATE TABLE like_publicacion
 			 positivo BOOL,
 			 fecha TIMESTAMP,
 			 CONSTRAINT like_publicacion_pk PRIMARY KEY(id_public,id_user),
-			 CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
-			 CONSTRAINT publicacion_fk FOREIGN KEY (id_public) REFERENCES publicacion(id)																
- 																			
+			 CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id),
+			 CONSTRAINT publicacion_fk FOREIGN KEY (id_public) REFERENCES publicacion(id));
+																			
 CREATE TABLE like_comentario
 			  (id_coment INT,
 			   id_user INT,
 			   positivo BOOL,
 			   fecha TIMESTAMP,
 			   CONSTRAINT like_comentario_pk PRIMARY KEY(id_coment,id_user),
-			   CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id));
-			   CONSTRAINT comentario_fk FOREIGN KEY (id_coment) REFERENCES comentario(id) 														 
+			   CONSTRAINT usuario_fk FOREIGN KEY (id_user) REFERENCES usuario(id),
+			   CONSTRAINT comentario_fk FOREIGN KEY (id_coment) REFERENCES comentario(id));														 
 											
 --2
 ALTER TABLE usuario
-DROP COLUMN id_carrera
+DROP COLUMN id_carrera;
 																			  
 CREATE TABLE carrera_usuario
 		      (id_carrera INT,
@@ -93,7 +95,7 @@ INSERT INTO carrera_usuario
 								
 																				
 --4
---Inserté el set de datos provisto en el archivo datos_unqfaces.sql en otro query para que sea más ordenado este query.
+--Inserté el set de datos provisto en el archivo datos_unqfaces.sql en otro query(Boglione_Martin_datos.sql)
 																				
 --5																				 																			 																				  
 SELECT nombre, COUNT(id_user) AS cant_alu
@@ -104,14 +106,16 @@ ORDER BY length(nombre) DESC;
 																				
 --6 prueba
 SELECT username,nombre,apellido
-FROM (publicacion JOIN usuario ON publicacion.id_user = usuario.id)																	
+FROM usuario 
+
+
+
 													
 --publicacion con mas de 10 likes
 SELECT id_public,COUNT(positivo)
-FROM like_publicacion
-WHERE positivo = TRUE																		
+FROM like_publicacion																		
 GROUP BY id_public
-HAVING COUNT(positivo) >= 10		
+HAVING COUNT(positivo) >= 10;		
 																				
 --id_comentarios que no tienen dislikes
 SELECT id_coment																				
@@ -119,16 +123,14 @@ FROM like_comentario
 EXCEPT
 SELECT id_coment
 FROM like_comentario
-WHERE positivo=false
-																				
-																				
+WHERE positivo=false;
+																																						
 --7
 																				
 																				
 --8																	
 SELECT nombre_grupo,COUNT(positivo) as cant_Likes																	
-FROM (grupo 
-JOIN grupo_usuario ON grupo.id = grupo_usuario.id_grupo) 
+FROM (grupo JOIN grupo_usuario ON grupo.id = grupo_usuario.id_grupo) 
 JOIN (publicacion JOIN like_publicacion ON publicacion.id = like_publicacion.id_public) ON grupo.id = publicacion.id_grupo																		
 WHERE grupo_usuario.id_user IN (SELECT id
 				  				FROM usuario
@@ -139,20 +141,20 @@ ORDER BY cant_Likes	DESC
 FETCH FIRST 6 ROWS ONLY;
 												
 --9			  
-SELECT username, COUNT(id_grupo) AS cantGrupos			  
+SELECT username, COUNT(id_grupo) AS cant_Grupos			  
 FROM grupo_usuario 
 JOIN usuario ON grupo_usuario.id_user = usuario.id
 GROUP BY username
-ORDER BY cantGrupos DESC , username ASC;
+ORDER BY cant_Grupos DESC , username ASC;
 				  
---10 
+--10
 SELECT comentario.contenido,publicacion.contenido,COUNT(positivo=false) as cant_Dislikes,COUNT(positivo=true) as cant_Likes
 FROM (like_comentario 
 JOIN comentario ON like_comentario.id_coment = comentario.id) 
 JOIN publicacion ON comentario.id_public = publicacion.id
 GROUP BY id_coment,comentario.contenido,publicacion.contenido,fecha_comentario
 HAVING COUNT(positivo = false) > 3
-ORDER BY cant_Dislikes DESC, fecha_comentario DESC;																		
+ORDER BY cant_Dislikes DESC, fecha_comentario ASC;																		
 
 --11
 SELECT nombre,apellido,titulo,fecha_publicacion
@@ -171,7 +173,9 @@ FROM grupo_usuario
 JOIN usuario ON grupo_usuario.id_user = usuario.id
 GROUP BY id_grupo;
 		
---13
+--13 falta ver que no cursan la misma carrera
+		
+--usuarios que solo hicieron likes en publicaciones		
 SELECT DISTINCT(id)
 FROM usuario 
 JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user 
@@ -180,23 +184,24 @@ WHERE usuario.id IN (SELECT id_user
 					 FROM like_publicacion
 					 WHERE positivo = true)
  
-INTERSECT -- UNION???					 
+UNION					 
 
+--usuarios que solo hicieron likes en comentarios		
 SELECT DISTINCT(id)
 FROM usuario 
 JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user 
 JOIN like_comentario ON usuario.id = like_comentario.id_user
 WHERE usuario.id IN (SELECT id_user
 					 FROM like_comentario
-					 WHERE positivo = true)						
+					 WHERE positivo = true);						
 					  
---14 hace falta agregar el contenido?????????
-SELECT id_user,max(fecha_comentario) AS ultimo_comentario
+--14 las comillas son para agregar espacio entre fecha_comentario y contenido
+SELECT id_user, max(fecha_comentario || ' - ' || contenido) AS ultimo_comentario
 FROM comentario 
 GROUP BY id_user
-ORDER BY id_user; --solo para ver mejor el resultado
+ORDER BY id_user; 
 		
---15 como poner varias carreras en una sola fila																			  
+--15 como poner varias carreras en una sola fila? si un usuario no pertenece a un grupo, no podria hacer ni una publicacion o comentario o likes de cualquier tipo? 
 SELECT usuario.nombre,apellido,username,email,carrera.nombre AS nombre_carreras
 FROM usuario
 JOIN carrera_usuario ON usuario.id = carrera_usuario.id_user
@@ -217,33 +222,36 @@ WHERE usuario.id NOT IN (SELECT id_user
 	usuario.id NOT IN (SELECT id_user
 						 FROM comentario);
 
---16 las comillas son para agregar un espacio entre apellido y age(fecha_nacimiento)
-SELECT nombre, apellido || '-' || AGE(fecha_nacimiento) AS apellido_y_edad
+--16 las comillas son para agregar espacio entre apellido y age(fecha_nacimiento)
+SELECT nombre, apellido || ' - ' || AGE(fecha_nacimiento) AS apellido_y_edad
 FROM usuario;																				  
 																					  																				  
---17 como ver solo el ultimo comentario al agregar el contenido???
-CREATE VIEW ultima_publicacion AS 
-SELECT username,contenido,max(fecha_publicacion)		
+--17 
+CREATE VIEW ultimas_publicaciones AS 
+SELECT username, max(fecha_publicacion || ' - ' || contenido) AS ultima_publicacion		
 FROM usuario 
 JOIN publicacion ON usuario.id = publicacion.id_user
-GROUP BY username,contenido	
-ORDER BY username asc;--no hace falta, solo está para ver mejor el resultado
+GROUP BY username;	
 		
---18
 
+--18 mal
+SELECT COUNT(comentario.id) AS cant_comentarios, username, max(fecha_publicacion || ' - ' || publicacion.contenido) AS ultima_publicacion,COUNT(positivo) AS like,COUNT(positivo=false) AS dislikes	
+FROM comentario 
+JOIN usuario ON comentario.id_user = usuario.id
+JOIN publicacion ON usuario.id = publicacion.id_user
+JOIN like_comentario ON usuario.id = like_comentario.id_user
+GROUP BY comentario.id_user,username
 		
-		
---19 falta agregar la diferencia de likes y dislikes
+--19 
 SELECT username,
 COUNT(like_publicacion.positivo = true) AS cant_likes_publicacion, 
 COUNT(like_publicacion.positivo = false) AS cant_dislikes_publicacion, 
 COUNT(like_comentario.positivo = true) AS cant_likes_comentario,	
 COUNT(like_comentario.positivo = false) AS cant_dislikes_comentario,
 		
-( COUNT(like_publicacion.positivo = true) 
-		+
-COUNT(like_comentario.positivo = false) 	) as sumalikes
-		
+( (COUNT(like_publicacion.positivo = true) + COUNT(like_comentario.positivo = true)) 
+										 -
+(COUNT(like_publicacion.positivo = false) + COUNT(like_comentario.positivo = false)) ) 	AS diferencia_likes	
 		
 FROM usuario	
 JOIN publicacion ON usuario.id = publicacion.id_user
@@ -251,9 +259,220 @@ JOIN comentario ON publicacion.id = comentario.id_public
 JOIN like_publicacion ON publicacion.id = like_publicacion.id_public 
 JOIN like_comentario ON comentario.id = like_comentario.id_coment
 GROUP BY username
-ORDER BY diferencia_likes asc
+ORDER BY diferencia_likes asc;
 		
-		
-		
-		
-		
+--20
+CREATE TABLE log_publicacion 
+     		  (id_log SERIAL PRIMARY KEY,
+			   fecha_log TIMESTAMP,
+			   accion_log VARCHAR(1),
+			   id SERIAL,
+			   id_user INT,
+			   id_grupo INT,
+			   titulo VARCHAR(200),
+			   contenido VARCHAR(200),
+			   fecha_publicacion TIMESTAMP);
+												  
+CREATE TABLE log_comentario
+ 			  (id_log SERIAL PRIMARY KEY,
+			   fecha_log TIMESTAMP,
+			   accion_log VARCHAR(1),
+			   id SERIAL,
+			   id_public INT,
+			   id_user INT,
+			   contenido VARCHAR(200),
+			   fecha_comentario TIMESTAMP);
+
+--funcion para insert en publicacion
+CREATE FUNCTION TR_insert_publicacion() returns Trigger
+AS
+$$
+BEGIN 
+INSERT INTO "log_publicacion" 
+ 		     (fecha_log,accion_log,id,id_user,id_grupo,titulo,contenido,fecha_publicacion)
+ 			 VALUES (current_timestamp,
+					 'I',
+					 NEW.id,
+					 NEW.id_user,
+					 NEW.id_grupo,
+					 NEW.titulo,
+					 NEW.contenido,
+					 NEW.fecha_publicacion);
+RETURN NEW;
+END
+$$
+LANGUAGE plpgsql;
+
+--trigger para insert en publicacion
+CREATE TRIGGER TR_publicacion_insert AFTER INSERT ON publicacion
+FOR EACH ROW
+EXECUTE PROCEDURE TR_insert_publicacion();
+
+ 
+--funcion para updates en publicacion
+CREATE FUNCTION TR_update_publicacion() returns Trigger
+AS
+$$
+BEGIN 
+INSERT INTO "log_publicacion" 
+ 		     (fecha_log,accion_log,id,id_user,id_grupo,titulo,contenido,fecha_publicacion)
+ 			 VALUES (current_timestamp,
+					 'U',
+					 NEW.id,
+					 NEW.id_user,
+					 NEW.id_grupo,
+					 NEW.titulo,
+					 NEW.contenido,
+					 NEW.fecha_publicacion);
+RETURN NEW;
+END
+$$
+LANGUAGE plpgsql; 
+ 
+--trigger para update en publicacion
+CREATE TRIGGER TR_publicacion_update AFTER UPDATE ON publicacion
+FOR EACH ROW
+EXECUTE PROCEDURE TR_update_publicacion(); 
+ 
+ 
+--funcion para deletes en publicacion
+CREATE FUNCTION TR_delete_publicacion() returns Trigger
+AS
+$$
+BEGIN 
+INSERT INTO "log_publicacion" 
+ 		     (fecha_log,accion_log,id,id_user,id_grupo,titulo,contenido,fecha_publicacion)
+ 			 VALUES (current_timestamp,
+					 'D',
+					 OLD.id,
+					 OLD.id_user,
+					 OLD.id_grupo,
+					 OLD.titulo,
+					 OLD.contenido,
+					 OLD.fecha_publicacion);
+RETURN NEW;
+END
+$$
+LANGUAGE plpgsql;  
+ 
+--trigger para deletes en publicacion
+CREATE TRIGGER TR_publicacion_delete AFTER DELETE ON publicacion
+FOR EACH ROW
+EXECUTE PROCEDURE TR_delete_publicacion();  
+ 
+
+ --funcion para insert en comentario
+CREATE FUNCTION TR_insert_comentario() returns Trigger
+AS
+$$
+BEGIN 
+INSERT INTO "log_comentario" 
+ 		     (fecha_log,accion_log,id,id_public,id_user,contenido,fecha_comentario)
+ 			 VALUES (current_timestamp,
+					 'I',
+					 NEW.id,
+					 NEW.id_public,
+					 NEW.id_user,
+					 NEW.contenido,
+					 NEW.fecha_comentario);
+RETURN NEW;
+END
+$$
+LANGUAGE plpgsql;
+
+--trigger para insert en comentario
+CREATE TRIGGER TR_comentario_insert AFTER INSERT ON comentario
+FOR EACH ROW
+EXECUTE PROCEDURE TR_insert_comentario();
+ 
+ 
+ --funcion para update en comentario
+CREATE FUNCTION TR_update_comentario() returns Trigger
+AS
+$$
+BEGIN 
+INSERT INTO "log_comentario" 
+ 		     (fecha_log,accion_log,id,id_public,id_user,contenido,fecha_comentario)
+ 			 VALUES (current_timestamp,
+					 'U',
+					 NEW.id,
+					 NEW.id_public,
+					 NEW.id_user,
+					 NEW.contenido,
+					 NEW.fecha_comentario);
+RETURN NEW;
+END
+$$
+LANGUAGE plpgsql;
+
+--trigger para update en comentario
+CREATE TRIGGER TR_comentario_update AFTER UPDATE ON comentario
+FOR EACH ROW
+EXECUTE PROCEDURE TR_update_comentario(); 
+ 
+ 
+ --funcion para delete en comentario
+CREATE FUNCTION TR_delete_comentario() returns Trigger
+AS
+$$
+BEGIN 
+INSERT INTO "log_comentario" 
+ 		     (fecha_log,accion_log,id,id_public,id_user,contenido,fecha_comentario)
+ 			 VALUES (current_timestamp,
+					 'D',
+					 OLD.id,
+					 OLD.id_public,
+					 OLD.id_user,
+					 OLD.contenido,
+					 OLD.fecha_comentario);
+RETURN NEW;
+END
+$$
+LANGUAGE plpgsql;
+
+--trigger para delete en comentario
+CREATE TRIGGER TR_comentario_delete AFTER DELETE ON comentario
+FOR EACH ROW
+EXECUTE PROCEDURE TR_delete_comentario();  
+
+ 
+
+--21
+ --para ver como queda log_publicacion
+SELECT *
+FROM log_publicacion;
+						
+--insert datos en publicacion 
+INSERT INTO publicacion 
+ 		VALUES('2018','12','12','Aguante Boca','La vuelta vamos a dar',current_timestamp);
+
+--update datos en publicacion
+UPDATE  publicacion 
+SET titulo = 'Llora river, el ciclon y la academia'	
+WHERE id = 2018;	 
+
+--delete datos en publicacion
+DELETE FROM  publicacion 
+WHERE id = 2018;	 
+
+
+ 
+--para ver como queda log_comentario
+SELECT *
+FROM log_comentario;
+ 
+--insert datos en comentario
+INSERT INTO comentario
+ 		VALUES('6000','200','10','BBDD es mi materia favorita',current_timestamp);
+ 
+--update datos en comentario
+UPDATE comentario
+SET contenido = 'Mentira,prefiero Objetos 1'
+WHERE id = 6000;
+
+--delete datos en comentario
+DELETE FROM comentario
+WHERE id = 6000;
+ 
+ 
+ 
